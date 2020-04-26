@@ -1,5 +1,13 @@
 Java.perform(function () {
     const String = Java.use('java.lang.String');
+    try {
+        Java.openClassFile("/data/local/tmp/gson.dex").load();
+        var gson = Java.use('com.google.gson.Gson').$new(); // 使用Gson将对象类转成Json对象时出现\u003d 、\u0027等情况的问题
+// var gson = Java.use('com.google.gson.GsonBuilder').$new().disableHtmlEscaping().create();
+        console.log("load gson.dex ok");
+    } catch (e) {
+        console.log(e);
+    }
     //wcdb
     try {
         const SQLiteConnection = Java.use('com.tencent.wcdb.database.SQLiteConnection');
@@ -28,6 +36,7 @@ Java.perform(function () {
             var result = this.key(password);
             console.log('passwordStr:' + String.$new(password));
             console.log("-->key(password:" + password + "):" + result);
+            console.log(Java.use("android.util.Log").getStackTraceString(Java.use("java.lang.Throwable").$new()));
             return result;
         };
         SQLiteDatabase.key_mutf8.implementation = function (password) {
@@ -48,7 +57,52 @@ Java.perform(function () {
     try {
         Interceptor.attach(Module.findExportByName("libsqlcipher.so", "sqlite3_key"), {
             onEnter: function (args) {
-                console.log("open(" + Memory.readCString(args[1]) + "," + args[2] + ")");
+                console.log("sqlite3_key(" + Memory.readCString(args[1]) + "," + args[2] + ")");
+            },
+            onLeave: function (retval) {
+
+            }
+        });
+        Interceptor.attach(Module.findExportByName("libsqlcipher.so", "sqlite3_rekey"), {
+            onEnter: function (args) {
+                console.log("sqlite3_rekey(" + Memory.readCString(args[1]) + "," + args[2] + ")");
+            },
+            onLeave: function (retval) {
+
+            }
+        });
+        Interceptor.attach(Module.findExportByName("libsqlcipher.so", "sqlite3_key_v2"), {
+            onEnter: function (args) {
+                console.log("sqlite3_key_v2(" + Memory.readCString(args[2]) + "," + args[3] + ")");
+                // console.log('open info.db file stack:\n' + Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n') + '\n');
+            },
+            onLeave: function (retval) {
+
+            }
+        });
+        Interceptor.attach(Module.findExportByName("libsqlcipher.so", "sqlite3_rekey_v2"), {
+            onEnter: function (args) {
+                console.log("sqlite3_rekey_v2(" + Memory.readCString(args[1]) + "," + args[2] + ")");
+            },
+            onLeave: function (retval) {
+
+            }
+        });
+        Interceptor.attach(Module.findExportByName("libsqlcipher.so", "sqlite3_open"), {
+            onEnter: function (args) {
+                console.log("sqlite3_open(" + Memory.readCString(args[0]) + ")");
+            },
+            onLeave: function (retval) {
+
+            }
+        });
+        Interceptor.attach(Module.findExportByName("libsqlcipher.so", "sqlite3_exec"), {
+            onEnter: function (args) {
+                var v = Memory.readCString(args[1]);
+                console.log("sqlite3_exec(" + v + ")");
+                // if (v === "PRAGMA key='111111';") {
+                //     console.log('open info.db file stack:\n' + Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n') + '\n');
+                // }
             },
             onLeave: function (retval) {
 
@@ -56,5 +110,19 @@ Java.perform(function () {
         });
     } catch (e) {
         console.log(e)
+    }
+    try {
+        String.substring.overload('int', 'int').implementation = function (start, end) {
+            var result = this.substring(start, end);
+            var thatStr=""+this;
+            console.log("->substring.this:" + this);
+            if (thatStr.indexOf("11111")!==-1) {
+                console.log("+++++++++++++++++++++++++find key+++++++++++++++++++");
+                console.log(Java.use("android.util.Log").getStackTraceString(Java.use("java.lang.Throwable").$new()));
+            }
+            return result;
+        }
+    }catch (e) {
+        console.log(e);
     }
 });
